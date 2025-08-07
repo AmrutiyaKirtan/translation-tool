@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ghibli-Style Translator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Magical Translator ✨</h1>
+        <div class="translation-box">
+            <div class="language-bar">
+                <div class="language-select">
+                    <select id="sourceLang">
+                        {% for lang in languages %}
+                        <option value="{{ lang.code }}" {% if lang.code == 'en' %}selected{% endif %}>{{ lang.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button id="swapBtn" class="swap-btn" title="Swap Languages">⇄</button>
+                <div class="language-select">
+                    <select id="targetLang">
+                        {% for lang in languages %}
+                        {% if lang.code != 'auto' %}
+                        <option value="{{ lang.code }}" {% if lang.code == 'ja' %}selected{% endif %}>{{ lang.name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="text-boxes">
+                <div class="text-box">
+                    <div class="text-label">
+                        <span>Original Text</span>
+                        <span class="char-counter"><span id="charCount">0</span>/500</span>
+                    </div>
+                    <textarea 
+                        id="inputText" 
+                        placeholder="Type or paste your text here..."
+                        maxlength="500"
+                        autofocus></textarea>
+                </div>
+
+                <button id="translateBtn" class="translate-btn">Translate →</button>
+
+                <div class="text-box">
+                    <div class="text-label">
+                        <span>Translation</span>
+                        <button id="copyBtn" class="copy-btn">Copy</button>
+                    </div>
+                    <div id="translationResult" class="translation-result">
+                        Your translation will appear here...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputText = document.getElementById('inputText');
+            const charCount = document.getElementById('charCount');
+            const translateBtn = document.getElementById('translateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const swapBtn = document.getElementById('swapBtn');
+            const translationResult = document.getElementById('translationResult');
+
+            // Update character count
+            inputText.addEventListener('input', function() {
+                const count = this.value.length;
+                charCount.textContent = count;
+                charCount.style.color = count >= 450 ? '#ff4444' : '#666';
+            });
+
+            // Swap languages
+            swapBtn.addEventListener('click', function() {
+                const sourceLang = document.getElementById('sourceLang');
+                const targetLang = document.getElementById('targetLang');
+                if (sourceLang.value !== 'auto') {
+                    const tempValue = sourceLang.value;
+                    sourceLang.value = targetLang.value;
+                    targetLang.value = tempValue;
+                }
+            });
+
+            // Translate text
+            translateBtn.addEventListener('click', async function() {
+                const text = inputText.value.trim();
+                if (!text) {
+                    alert('Please enter some text to translate');
+                    inputText.focus();
+                    return;
+                }
+
+                translationResult.textContent = 'Translating...';
+                translationResult.style.color = '#5c9ead';
+                translationResult.style.fontStyle = 'italic';
+
+                try {
+                    const response = await fetch('/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            source_lang: document.getElementById('sourceLang').value,
+                            target_lang: document.getElementById('targetLang').value
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Translation response:', data); // Debug log
+                    
+                    if (data.translation) {
+                        translationResult.textContent = data.translation;
+                        translationResult.style.color = '#333';
+                        translationResult.style.fontStyle = 'normal';
+                    } else {
+                        throw new Error('No translation received');
+                    }
+                } catch (error) {
+                    console.error('Translation error:', error); // Debug log
+                    translationResult.textContent = 'Translation failed. Please try again.';
+                    translationResult.style.color = '#ff4444';
+                }
+            });
+
+            // Copy translated text
+            copyBtn.addEventListener('click', function() {
+                const text = translationResult.textContent;
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Copy';
+                        }, 2000);
+                    })
+                    .catch(() => {
+                        alert('Failed to copy text to clipboard');
+                    });
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    translateBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

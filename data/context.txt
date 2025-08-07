@@ -1,0 +1,7 @@
+# filepath: translation-tool/data/context.txt
+
+# This file is used to track changes made to the project.
+# Please add a new entry for each significant change, including the date, description of the change, and the author.
+
+# Example entry:
+# [YYYY-MM-DD] - Description of the change - Author Name

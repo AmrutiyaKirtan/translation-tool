@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ghibli-Style Translator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #faf6e9;
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        /* Background gradient effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .translation-box {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(92, 158, 173, 0.2);
+            border: 3px solid #5c9ead;
+        }
+
+        .language-select {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .language-selector::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+            border-radius: 12px;
+            z-index: -1;
+        }
+
+        .lang-option {
+            flex: 1;
+            padding: 16px 32px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            position: relative;
+            text-transform: uppercase;
+        }
+
+        .lang-option.active {
+            color: #000;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        .lang-option:not(.active):hover {
+            color: rgba(255,255,255,0.9);
+        }
+
+        /* Text area container */
+        .text-area-container {
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .text-area-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+        }
+
+        .text-area-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .text-area-wrapper:focus-within::before {
+            opacity: 1;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 24px;
+            background: #ffffff;
+            border: 2px solid #5c9ead;
+            border-radius: 15px;
+            color: #333;
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.6;
+            letter-spacing: 0.3px;
+            resize: vertical;
+            outline: none;
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        textarea::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+        
+        textarea:focus {
+            border-color: #3a7c8c;
+            box-shadow: 0 0 15px rgba(92, 158, 173, 0.2), inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Translate button */
+        .translate-btn {
+            display: block;
+            width: 200px;
+            margin: 0 auto 40px;
+            padding: 18px 40px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 100px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .translate-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .translate-btn:hover {
+            border-color: rgba(255,255,255,0.5);
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .translate-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        /* Result area */
+        .result-container {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .result-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-wrapper {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+            border-radius: 16px;
+            padding: 1px;
+        }
+
+        .result {
+            padding: 24px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 15px;
+            min-height: 120px;
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            line-height: 1.6;
+            letter-spacing: 0.3px;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .loading.show {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loading span {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+
+        .loading span:nth-child(1) { animation-delay: -0.32s; }
+        .loading span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes pulse {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Subtle glow effect on focus */
+        .glow-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        textarea:focus ~ .glow-effect {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .lang-option {
+                padding: 14px 20px;
+                font-size: 12px;
+            }
+
+            .translate-btn {
+                width: 180px;
+                padding: 16px 32px;
+                font-size: 13px;
+            }
+
+            textarea {
+                font-size: 15px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="language-selector">
+            <button class="lang-option active" onclick="setLanguage('en-ja', this)">English → Japanese</button>
+            <button class="lang-option" onclick="setLanguage('ja-en', this)">Japanese → English</button>
+        </div>
+
+        <div class="text-area-container">
+            <div class="text-area-wrapper">
+                <textarea id="inputText" placeholder="Enter text to translate..."></textarea>
+                <div class="glow-effect"></div>
+            </div>
+        </div>
+
+        <button class="translate-btn" onclick="translate()">Translate</button>
+
+        <div id="resultContainer" class="result-container">
+            <div class="result-wrapper">
+                <div id="result" class="result"></div>
+                <div class="loading">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'en-ja';
+        
+        function setLanguage(mode, element) {
+            currentMode = mode;
+            document.querySelectorAll('.lang-option').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            // Update placeholder
+            const placeholder = mode === 'en-ja' ? 'Enter text to translate...' : 'テキストを入力してください...';
+            document.getElementById('inputText').placeholder = placeholder;
+            
+            // Hide result
+            document.getElementById('resultContainer').classList.remove('show');
+        }
+        
+        async function translate() {
+            const input = document.getElementById('inputText').value.trim();
+            if (!input) return;
+            
+            const resultContainer = document.getElementById('resultContainer');
+            const result = document.getElementById('result');
+            const loading = document.querySelector('.loading');
+            
+            // Show loading state
+            resultContainer.classList.remove('show');
+            result.style.opacity = '0';
+            loading.classList.add('show');
+            
+            try {
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: input,
+                        source_lang: currentMode.split('-')[0],
+                        target_lang: currentMode.split('-')[1]
+                    })
+                });
+
+                const data = await response.json();
+                
+                loading.classList.remove('show');
+                result.innerHTML = data.translation;
+                result.style.opacity = '1';
+                resultContainer.classList.add('show');
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                result.innerHTML = 'Translation failed. Please try again.';
+                result.style.opacity = '1';
+                resultContainer.classList.add('show');
+            }
+        }
+        
+        // Enter key to translate
+        document.getElementById('inputText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                translate();
+            }
+        });
+        
+        // Auto-resize textarea
+        const textarea = document.getElementById('inputText');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+    </script>
+</body>
+</html>
